@@ -1,0 +1,11 @@
+{% extends 'web_interface/base.html' %}
+
+{% block content %}
+<h2>Добавить сервер</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Сохранить</button>
+    <a href="{% url 'servers_list' %}">Отмена</a>
+</form>
+{% endblock %}

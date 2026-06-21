@@ -1,0 +1,40 @@
+{% extends 'web_interface/base.html' %}
+
+{% block title %}Вход в систему{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 50px auto;">
+    <h2>🔐 Вход</h2>
+    
+    {% if form.errors %}
+        <div style="background: #f8d7da; padding: 10px; border-radius: 5px; margin-bottom: 15px; color: #721c24;">
+            Неверное имя пользователя или пароль.
+        </div>
+    {% endif %}
+    
+    {% if next %}
+        {% if user.is_authenticated %}
+            <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                У вас нет доступа к этой странице.
+            </div>
+        {% endif %}
+    {% endif %}
+    
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold;">Имя пользователя</label>
+            <input type="text" name="username" class="form-control" style="width: 100%; padding: 8px;" required>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold;">Пароль</label>
+            <input type="password" name="password" class="form-control" style="width: 100%; padding: 8px;" required>
+        </div>
+        
+        <button type="submit" style="padding: 10px 20px;">Войти</button>
+        <input type="hidden" name="next" value="{{ next }}">
+    </form>
+</div>
+{% endblock %}

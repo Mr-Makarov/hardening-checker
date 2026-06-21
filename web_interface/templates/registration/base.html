@@ -1,0 +1,23 @@
+<!-- base.html -->
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>🛡️ Hardening Checker | Харденинг сканер</h1>
+
+            {% if user.is_authenticated %}
+                <div>
+                    👋 Здравствуйте, <strong>{{ user.username }}</strong>
+                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" style="background: none; border: none; color: #dc3545; cursor: pointer;">Выйти</button>
+                    </form>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}" style="color: white;">Войти</a>
+            {% endif %}
+        </div>
+        <hr>
+
+        {% block content %}{% endblock %}
+    </div>
+</body>

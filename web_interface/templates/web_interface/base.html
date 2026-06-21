@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Vulnerability Scanner{% endblock %}</title>
+</head>
+<body>
+    <h1>🛡️ Hardening Checker | Харденинг сканер</h1>
+
+    <!-- Кнопка выхода ДО блока content -->
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        {% if user.is_authenticated %}
+            <span>👋 Привет, <strong>{{ user.username }}</strong>!</span>
+            <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit">Выйти</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <hr>
+
+    <!-- Основное содержание страницы -->
+    {% block content %}
+    {% endblock %}
+</body>
+</html>

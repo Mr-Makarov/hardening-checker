@@ -1,0 +1,88 @@
+{% extends 'web_interface/base.html' %}
+
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+    <h2>Добро пожаловать!</h2>
+    <h2>Настройки сканирования</h2>
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button type="submit" name="action" value="check">🔌 Проверить соединение</button>
+        <button type="submit" name="action" value="scan">🚀 Запустить сканирование</button>
+    </form>
+
+    <hr>
+
+    <div id="results">
+{% if results %}
+    {% if results.type == 'scan' %}
+
+        {% if selected_server %}
+        <div style="margin-top: 20px;">
+            <a href="{% url 'export_server_report_csv' server_id=selected_server.id %}" class="btn">
+                📥 Скачать отчет по серверу (CSV)
+            </a>
+        </div>
+        {% endif %}
+
+        <h3>Результаты сканирования:</h3>
+
+        <!-- Статистика -->
+        <div style="margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
+            <strong>📊 Статистика:</strong>
+            <span style="color: green;">✅ PASS: {{ results.stats.PASS }}</span> |
+            <span style="color: red;">❌ FAIL: {{ results.stats.FAIL }}</span> |
+            <span style="color: orange;">⚠️ ERROR: {{ results.stats.ERROR }}</span>
+        </div>
+
+        <!-- Таблица результатов -->
+        <table border="1" style="border-collapse: collapse; width: 100%;">
+            <thead style="background-color: #f2f2f2;">
+                <tr>
+                    <th>Код</th>
+                    <th>Описание</th>
+                    <th>Проверяемо значение</th>
+                    <th>Статус</th>
+                    <th>Ожидалось</th>
+                    <th>Получено</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in results.data %}
+                <tr style="background-color:
+                    {% if item.status == 'PASS' %}#d4edda
+                    {% elif item.status == 'FAIL' %}#f8d7da
+                    {% else %}#fff3cd{% endif %}">
+                    <td><strong>{{ item.code }}</strong></td>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.verifiable_value }}</td>
+                    <td>
+                        {% if item.status == 'PASS' %}✅ PASS
+                        {% elif item.status == 'FAIL' %}❌ FAIL
+                        {% else %}⚠️ ERROR
+                        {% endif %}
+                    </td>
+                    <td>{{ item.expected|default:"—" }}</td>
+                    <td>
+                        {% if item.message %}
+                            {{ item.message|truncatechars:50 }}
+                        {% else %}
+                            {{ item.current|default:"—" }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    {% elif results.type == 'check' %}
+        <h3>Результат проверки соединения:</h3>
+        <pre>{{ results.data }}</pre>
+    {% endif %}
+{% endif %}
+    </div>
+
+
+{% endblock %}

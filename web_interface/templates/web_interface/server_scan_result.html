@@ -1,0 +1,50 @@
+{% extends 'web_interface/base.html' %}
+
+{% block title %}Результаты сканирования {{ server.name }}{% endblock %}
+
+{% block content %}
+<h2>Результаты сканирования сервера {{ server.name }}</h2>
+<p><strong>Хост:</strong> {{ server.host }}:{{ server.port }}</p>
+<p><strong>Дата сканирования:</strong> {{ server.last_scan_date|date:"d.m.Y H:i:s" }}</p>
+<p><strong>Статус:</strong>
+    {% if server.last_scan_status == 'success' %}✅ Успешно
+    {% elif server.last_scan_status == 'failed' %}❌ Найдены нарушения
+    {% else %}⚠️ Ошибка{% endif %}
+</p>
+
+<h3>Статистика</h3>
+<ul>
+    <li>✅ PASS: {{ server.last_scan_summary.PASS|default:0 }}</li>
+    <li>❌ FAIL: {{ server.last_scan_summary.FAIL|default:0 }}</li>
+    <li>⚠️ ERROR: {{ server.last_scan_summary.ERROR|default:0 }}</li>
+</ul>
+
+<h3>Детали проверок</h3>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Код</th>
+            <th>Описание</th>
+            <th>Статус</th>
+            <th>Ожидалось</th>
+            <th>Получено</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in results_data %}
+        <tr style="background-color:
+            {% if item.status == 'PASS' %}#d4edda
+            {% elif item.status == 'FAIL' %}#f8d7da
+            {% else %}#fff3cd{% endif %}">
+            <td>{{ item.code }}</td>
+            <td>{{ item.description }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.expected|default:"—" }}</td>
+            <td>{{ item.current|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'servers_list' %}">← Назад к списку серверов</a>
+{% endblock %}

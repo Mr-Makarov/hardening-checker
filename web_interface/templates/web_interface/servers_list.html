@@ -1,0 +1,321 @@
+{% extends 'web_interface/base.html' %}
+
+{% block title %}Серверы{% endblock %}
+
+{% block content %}
+{% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+{% endif %}
+<h2>Список серверов</h2>
+<a href="{% url 'server_add' %}">Добавить сервер</a>
+
+<h3>Массовый импорт из CSV</h3>
+<form method="post" enctype="multipart/form-data" action="{% url 'servers_import' %}">
+    {% csrf_token %}
+    <input type="file" name="csv_file" accept=".csv" required>
+    <button type="submit">Загрузить и импортировать</button>
+</form>
+
+
+<button id="mass-check-btn" style="margin: 10px 0;">Проверить соединение выбранных</button>
+<div id="mass-check-progress" style="margin-bottom: 10px;"></div>
+
+<div style="margin: 10px 0;">
+    <label for="profile-select">Профиль сканирования:</label>
+    <select id="profile-select">
+        {% for profile in profiles %}
+        <option value="{{ profile.id }}">{{ profile.name }}</option>
+        {% endfor %}
+    </select>
+    <button id="mass-scan-sync-btn">Сканировать выбранные</button>
+    <div id="sync-scan-progress"></div>
+</div>
+
+<table border="1" style="width:100%; border-collapse: collapse;">
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="select-all"></th>
+            <th>Имя</th>
+            <th>Хост</th>
+            <th>Порт</th>
+            <th>Пользователь</th>
+            <th>Активен</th>
+            <th>Действия</th>
+            <th>Статус</th>
+            <th>Последнее сканирование</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for server in servers %}
+        <tr>
+            <td><input type="checkbox" class="server-checkbox" value="{{ server.id }}"></td>
+            <td>{{ server.name }}</td>
+            <td>{{ server.host }}</td>
+            <td>{{ server.port }}</td>
+            <td>{{ server.username }}</td>
+            <td>{{ server.is_active|yesno:"Да,Нет" }}</td>
+            <td>
+                <button class="check-conn-btn" data-server-id="{{ server.id }}" data-host="{{ server.host }}" data-port="{{ server.port }}" data-username="{{ server.username }}" data-password="{{ server.password }}">Проверить соединение</button>
+                <button onclick="location.href='{% url 'index' %}?server_id={{ server.id }}'">Сканировать</button>
+            </td>
+           <td class="status-cell-{{ server.id }}">
+                <span title="{{ server.status_tooltip }}">{{ server.status_icon }}</span>
+                <span class="status-text-{{ server.id }}">{{ server.status_text }}</span>
+           </td>
+            <td>
+                {% if server.last_scan_status == 'success' %}✅ {{ server.last_scan_date|date:"d.m.Y H:i" }}
+                {% elif server.last_scan_status == 'failed' %}❌ {{ server.last_scan_date|date:"d.m.Y H:i" }}
+                {% elif server.last_scan_status == 'error' %}⚠️ {{ server.last_scan_date|date:"d.m.Y H:i" }}
+                {% else %}❓ не проводилось{% endif %}
+            </td>
+
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">Нет добавленных серверов</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'index' %}">← На главную</a>
+
+<script>
+// Функция для получения CSRF-токена из cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Обновление отображения статуса сервера в таблице
+function updateServerStatusUI(serverId, success, message) {
+    const statusCell = document.querySelector(`.status-cell-${serverId}`);
+    if (!statusCell) return;
+    const iconSpan = statusCell.querySelector('span:first-child');
+    const textSpan = statusCell.querySelector(`.status-text-${serverId}`);
+    if (iconSpan) {
+        iconSpan.innerHTML = success ? '✅' : '❌';
+        iconSpan.title = message;
+    }
+    if (textSpan) {
+        textSpan.innerHTML = success ? 'Соединение установлено' : 'Не удалось подключиться';
+    }
+}
+
+// Обработчик для кнопки "Проверить соединение выбранных"
+document.getElementById('mass-check-btn').addEventListener('click', async function() {
+    const checkboxes = document.querySelectorAll('.server-checkbox:checked');
+    const serverIds = Array.from(checkboxes).map(cb => cb.value);
+    if (serverIds.length === 0) {
+        alert('Выберите хотя бы один сервер');
+        return;
+    }
+
+    const btn = this;
+    const progressDiv = document.getElementById('mass-check-progress');
+    btn.disabled = true;
+    let completed = 0;
+    let successCount = 0;
+    let failCount = 0;
+
+    progressDiv.innerHTML = `Прогресс: 0 из ${serverIds.length}`;
+
+    for (const serverId of serverIds) {
+        const rowBtn = document.querySelector(`.check-conn-btn[data-server-id="${serverId}"]`);
+        if (!rowBtn) {
+            console.warn(`Кнопка для сервера ${serverId} не найдена`);
+            completed++;
+            progressDiv.innerHTML = `Прогресс: ${completed} из ${serverIds.length} (пропущен ${serverId})`;
+            continue;
+        }
+        const host = rowBtn.dataset.host;
+        const port = rowBtn.dataset.port;
+        const username = rowBtn.dataset.username;
+        const password = rowBtn.dataset.password;
+
+        try {
+            const response = await fetch("{% url 'check_connection_ajax' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ host, port, username, password })
+            });
+            const data = await response.json();
+            const success = data.success;
+            const message = data.message;
+            updateServerStatusUI(serverId, success, message);
+
+            // Сохраняем статус на сервере (опционально)
+            fetch("{% url 'update_server_status' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    server_id: serverId,
+                    success: success,
+                    message: message
+                })
+            }).catch(err => console.error('Ошибка сохранения статуса:', err));
+
+            if (success) successCount++;
+            else failCount++;
+        } catch (err) {
+            console.error(`Ошибка проверки сервера ${serverId}:`, err);
+            updateServerStatusUI(serverId, false, 'Ошибка сети');
+            failCount++;
+        }
+        completed++;
+        progressDiv.innerHTML = `Прогресс: ${completed} из ${serverIds.length} (✅ ${successCount}, ❌ ${failCount})`;
+    }
+
+    progressDiv.innerHTML += `<br>Завершено. Успешно: ${successCount}, Ошибок: ${failCount}`;
+    btn.disabled = false;
+    // Через 5 секунд очистим сообщение прогресса
+    setTimeout(() => {
+        progressDiv.innerHTML = '';
+    }, 5000);
+});
+
+// Обработчик "Выбрать все"
+document.getElementById('select-all').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.server-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+// Обработчики для одиночных кнопок (у вас уже могут быть, но для полноты)
+document.querySelectorAll('.check-conn-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const button = this;
+        const host = button.dataset.host;
+        const port = button.dataset.port;
+        const username = button.dataset.username;
+        const password = button.dataset.password;
+        const serverId = button.dataset.serverId;
+        const originalText = button.innerHTML;
+        button.innerHTML = '⏳ Проверка...';
+
+        fetch("{% url 'check_connection_ajax' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ host, port, username, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.innerHTML = '✅ Соединение установлено';
+            } else {
+                button.innerHTML = '❌ Ошибка';
+            }
+            updateServerStatusUI(serverId, data.success, data.message);
+            // Сохраняем статус на сервере
+            if (serverId) {
+                fetch("{% url 'update_server_status' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        server_id: serverId,
+                        success: data.success,
+                        message: data.message
+                    })
+                }).catch(err => console.error('Ошибка сохранения статуса:', err));
+            }
+            setTimeout(() => {
+                button.innerHTML = originalText;
+            }, 3000);
+        })
+        .catch(err => {
+            console.error('Ошибка проверки:', err);
+            button.innerHTML = '❌ Ошибка сети';
+            setTimeout(() => {
+                button.innerHTML = originalText;
+            }, 3000);
+        });
+    });
+});
+    // Обработчик для кнопки "Сканировать выбранные"
+document.getElementById('mass-scan-sync-btn').addEventListener('click', function() {
+    const checkboxes = document.querySelectorAll('.server-checkbox:checked');
+    const serverIds = Array.from(checkboxes).map(cb => cb.value);
+    if (serverIds.length === 0) {
+        alert('Выберите хотя бы один сервер');
+        return;
+    }
+    const profileId = document.getElementById('profile-select').value;
+    const btn = this;
+    const progressDiv = document.getElementById('sync-scan-progress');
+
+    btn.disabled = true;
+    btn.innerHTML = 'Сканирование...';
+    progressDiv.innerHTML = '⏳ Сканирование запущено. Пожалуйста, подождите, это может занять время...';
+
+    fetch("{% url 'mass_scan_sync' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ server_ids: serverIds, profile_id: profileId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let message = `✅ Сканирование завершено!\n`;
+            message += `Всего серверов: ${data.summary.total}\n`;
+            message += `✅ PASS: ${data.summary.passed_total}\n`;
+            message += `❌ FAIL: ${data.summary.failed_total}\n`;
+            message += `⚠️ ERROR: ${data.summary.error_total}\n\n`;
+            message += `Детали:\n`;
+            data.details.forEach(d => {
+                if (d.status === 'success') {
+                    message += ` - ${d.server_name}: ✅ успешно (PASS=${d.stats.PASS}, FAIL=${d.stats.FAIL})\n`;
+                } else if (d.status === 'failed') {
+                    message += ` - ${d.server_name}: ❌ провал (PASS=${d.stats.PASS}, FAIL=${d.stats.FAIL})\n`;
+                } else {
+                    message += ` - ${d.server_name}: ⚠️ ошибка (${d.error})\n`;
+                }
+            });
+            alert(message);
+            location.reload(); // перезагружаем страницу, чтобы обновить статусы
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(err => {
+        alert('Ошибка сети');
+        console.error(err);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = 'Сканировать выбранные (синхронно)';
+        progressDiv.innerHTML = '';
+    });
+});
+</script>
+
+{% endblock %}
+
