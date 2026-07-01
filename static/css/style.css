@@ -1,0 +1,525 @@
+/* static/css/style.css — Стиль "Матрица" */
+
+/* ===== Общие стили ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', Courier, monospace;
+    background: #0a0f0a;
+    color: #00ff41;
+    padding: 20px;
+    line-height: 1.6;
+    text-shadow: 0 0 2px rgba(0, 255, 65, 0.3);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #0f1a0f;
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid #00ff41;
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.1), inset 0 0 30px rgba(0, 255, 65, 0.02);
+}
+
+h1, h2, h3 {
+    color: #00ff41;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    letter-spacing: 1px;
+}
+
+h1 {
+    font-size: 28px;
+    border-bottom: 2px solid #00ff41;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    border-bottom: 1px solid #1a3a1a;
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+}
+
+a {
+    color: #00ff41;
+    text-decoration: none;
+    transition: color 0.2s, text-shadow 0.2s;
+}
+a:hover {
+    color: #66ff99;
+    text-shadow: 0 0 15px rgba(0, 255, 65, 0.8);
+    text-decoration: none;
+}
+
+/* ===== Навигация ===== */
+nav {
+    background: #0a120a;
+    border: 1px solid #00ff41;
+    border-radius: 12px;
+    padding: 12px 24px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.05);
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+}
+
+nav ul li {
+    display: inline;
+}
+
+nav a {
+    color: #00ff41;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
+    transition: background 0.2s, text-shadow 0.2s;
+    letter-spacing: 0.5px;
+}
+nav a:hover {
+    background: #1a2a1a;
+    text-shadow: 0 0 15px #00ff41;
+}
+
+nav .user-info {
+    color: #66ff99;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+nav .user-info form {
+    display: inline;
+}
+
+nav .user-info button {
+    background: transparent;
+    border: 1px solid #ff3333;
+    color: #ff3333;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    transition: background 0.2s, box-shadow 0.2s;
+    font-family: 'Courier New', monospace;
+}
+nav .user-info button:hover {
+    background: #2a1a1a;
+    box-shadow: 0 0 20px rgba(255, 51, 51, 0.3);
+}
+
+/* ===== Формы ===== */
+form {
+    margin-bottom: 20px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="file"],
+select {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px 14px;
+    border: 1px solid #1a3a1a;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #0f1a0f;
+    color: #00ff41;
+    font-family: 'Courier New', monospace;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    display: block;
+    margin-bottom: 12px;
+}
+input:focus,
+select:focus {
+    border-color: #00ff41;
+    outline: none;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+}
+input::placeholder {
+    color: #2a5a2a;
+}
+
+label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+    color: #66ff99;
+    letter-spacing: 0.5px;
+}
+
+/* ===== Кнопки ===== */
+button,
+.btn {
+    display: inline-block;
+    background: #1a2a1a;
+    color: #00ff41;
+    border: 1px solid #00ff41;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    line-height: 1;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.3);
+}
+button:hover,
+.btn:hover {
+    background: #00ff41;
+    color: #0a0f0a;
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
+    transform: scale(1.02);
+}
+button:active,
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-success {
+    border-color: #2ecc71;
+    color: #2ecc71;
+}
+.btn-success:hover {
+    background: #2ecc71;
+    color: #0a0f0a;
+}
+
+.btn-danger {
+    border-color: #ff3333;
+    color: #ff3333;
+}
+.btn-danger:hover {
+    background: #ff3333;
+    color: #0a0f0a;
+}
+
+.btn-warning {
+    border-color: #f1c40f;
+    color: #f1c40f;
+}
+.btn-warning:hover {
+    background: #f1c40f;
+    color: #0a0f0a;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid #00ff41;
+    color: #00ff41;
+}
+.btn-outline:hover {
+    background: #00ff41;
+    color: #0a0f0a;
+}
+
+/* ===== Таблицы ===== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+}
+
+table th {
+    background: #0a120a;
+    color: #00ff41;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #00ff41;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #1a2a1a;
+}
+
+table tbody tr:nth-child(even) {
+    background: #0d160d;
+}
+table tbody tr:hover {
+    background: #1a2a1a;
+}
+
+table .status-pass {
+    color: #2ecc71;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
+table .status-fail {
+    color: #ff3333;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(255, 51, 51, 0.3);
+}
+table .status-error {
+    color: #f1c40f;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
+}
+
+/* ===== Карточки ===== */
+.card {
+    background: #0d160d;
+    border: 1px solid #1a3a1a;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.02);
+}
+
+.card h3 {
+    margin-top: 0;
+    color: #66ff99;
+}
+
+/* ===== Прогресс-бары и сообщения ===== */
+.progress {
+    background: #1a2a1a;
+    border-radius: 20px;
+    padding: 4px;
+    margin: 10px 0;
+    border: 1px solid #00ff41;
+}
+.progress-bar {
+    background: #00ff41;
+    height: 20px;
+    border-radius: 20px;
+    color: #0a0f0a;
+    text-align: center;
+    font-size: 12px;
+    line-height: 20px;
+    font-weight: 600;
+    transition: width 0.4s;
+    text-shadow: none;
+}
+
+.messages {
+    margin-bottom: 15px;
+}
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    border-left: 4px solid;
+}
+.alert-success {
+    background: #0d1a0d;
+    color: #2ecc71;
+    border-left-color: #2ecc71;
+}
+.alert-error {
+    background: #1a0d0d;
+    color: #ff3333;
+    border-left-color: #ff3333;
+}
+.alert-warning {
+    background: #1a1a0d;
+    color: #f1c40f;
+    border-left-color: #f1c40f;
+}
+.alert-info {
+    background: #0d1a1a;
+    color: #66ccff;
+    border-left-color: #66ccff;
+}
+
+/* ===== Адаптивность ===== */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    .container {
+        padding: 15px;
+    }
+    nav {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    nav ul {
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+    }
+    nav .user-info {
+        justify-content: center;
+        margin-top: 8px;
+    }
+    table {
+        font-size: 12px;
+    }
+    table th, table td {
+        padding: 6px 8px;
+    }
+    input, select {
+        max-width: 100%;
+    }
+}
+
+/* ===== Специальные эффекты ===== */
+/* Мигающий курсор (для заголовка) */
+h1::after {
+    content: "|";
+    animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Свечение для активных элементов */
+button:focus, input:focus {
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.15);
+}
+
+/* ===== Отчёты и результаты сканирования ===== */
+#results {
+    background: #000000;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #00ff41;
+    margin-top: 20px;
+}
+
+#results table {
+    background: #000000;
+    color: #ffffff;  /* белый текст для всей таблицы */
+    font-size: 14px;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#results table th {
+    background: #0a1a0a;
+    color: #00ff41;
+    padding: 12px 15px;
+    border-bottom: 2px solid #00ff41;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+#results table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #1a3a1a;
+    color: #000000;  /* белый, без зелени */
+    text-shadow: none; /* убираем свечение */
+}
+
+#results table tr:nth-child(even) {
+    background: #0a0f0a;
+}
+
+#results table tr:hover {
+    background: #1a2a1a;
+}
+
+/* Статусы в отчёте — яркие, контрастные */
+#results .status-pass {
+    color: #2ecc71;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+}
+
+#results .status-fail {
+    color: #ff4444;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
+}
+
+#results .status-error {
+    color: #f1c40f;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
+}
+
+/* Статистика в отчёте */
+#results .stats {
+    display: flex;
+    gap: 20px;
+    padding: 10px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #1a3a1a;
+}
+
+#results .stats span {
+    font-weight: 600;
+    font-size: 16px;
+    color: #ffffff;
+}
+
+#results .stats .pass {
+    color: #2ecc71;
+}
+
+#results .stats .fail {
+    color: #ff4444;
+}
+
+#results .stats .error {
+    color: #f1c40f;
+}
+
+/* Статусы в отчёте */
+#results .status-pass {
+    color: #2ecc71;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+}
+
+#results .status-fail {
+    color: #ff4444;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(255, 68, 68, 0.4);
+}
+
+#results .status-error {
+    color: #f1c40f;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
+}
+
+/* Статистика в отчёте */
+#results .stats {
+    display: flex;
+    gap: 20px;
+    padding: 10px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #1a3a1a;
+}
+
+#results .stats span {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+#results .stats .pass {
+    color: #2ecc71;
+}
+
+#results .stats .fail {
+    color: #ff4444;
+}
+
+#results .stats .error {
+    color: #f1c40f;
+}

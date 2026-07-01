@@ -29,7 +29,7 @@ local_settings.py
 media/
 staticfiles/
 media/
-static/
+#static/
 
 # IDEs
 .vscode/
