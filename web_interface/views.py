@@ -1,4 +1,8 @@
-import csv, json
+import csv, json, zipfile
+import io
+import uuid
+import threading
+from io import BytesIO
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -6,9 +10,10 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from .forms import ConnectServerForm, ServerAddForm
-from .models import ScanProfiles, Servers, ServerStatus
+from .models import ScanProfiles, Servers, ServerStatus, ScanTask
 from .services import run_scan, scan_and_save
-from applications import test_connection
+from applications import test_connection, generate_server_csv_content
+from .tasks import run_scan_task
 
 
 # Create your views here.
@@ -236,8 +241,11 @@ def update_server_status(request):
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=405)
 
 
+
 @login_required
-def mass_scan_sync(request):
+def mass_scan_thread(request):
+    """Представление запуска массового сканиования"""
+
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -249,56 +257,41 @@ def mass_scan_sync(request):
         if not server_ids or not profile_id:
             return JsonResponse({'error': 'Missing parameters'}, status=400)
 
-        profile = ScanProfiles.objects.get(id=profile_id, is_active=True)
-        servers = Servers.objects.filter(id__in=server_ids, is_active=True)
+        profile = ScanProfiles.objects.get(id=profile_id)
+        servers = Servers.objects.filter(id__in=server_ids, created_by=request.user)
+
         if not servers.exists():
             return JsonResponse({'error': 'No valid servers'}, status=400)
 
-        passed_total = 0
-        failed_total = 0
-        error_total = 0
-        results_list = []  # для быстрого ответа (или можно потом загрузить из БД)
+        # Генерируем уникальный ID задачи
+        task_id = str(uuid.uuid4())
 
-        # Последовательно сканируем каждый сервер
-        for server in servers:
-            checks = profile.checks.all()
-            try:
-                scan_result = run_scan(server.host, server.port, server.username, server.password, checks)
-                stats = scan_result.get('stats', {'PASS': 0, 'FAIL': 0, 'ERROR': 0})
-                passed_total += stats['PASS']
-                failed_total += stats['FAIL']
-                error_total += stats['ERROR']
+        # Создаём задачу в БД со статусом 'pending'
+        task = ScanTask.objects.create(
+            task_id=task_id,
+            created_by=request.user,
+            profile=profile,
+            status='pending',
+            total_servers=servers.count(),
+            processed_servers=0,
+            passed_total=0,
+            failed_total=0,
+            error_total=0
+        )
+        task.servers.set(servers)
 
-                # Сохраняем
-                scan_and_save(server, profile)
+        # Запускаем фоновый поток
+        thread = threading.Thread(
+            target=run_scan_task,
+            args=(task_id, request.user.id, server_ids, profile_id)
+        )
+        thread.daemon = True  # поток завершится при остановке Django
+        thread.start()
 
-                results_list.append({
-                    'server_name': server.name,
-                    'status': 'success' if stats['FAIL'] == 0 else 'failed',
-                    'stats': stats
-                })
-            except Exception as e:
-                error_total += 1
-                results_list.append({
-                    'server_name': server.name,
-                    'status': 'error',
-                    'error': str(e)
-                })
-
-        # Возвращаем сводку
-        return JsonResponse({
-            'success': True,
-            'summary': {
-                'total': servers.count(),
-                'passed_total': passed_total,
-                'failed_total': failed_total,
-                'error_total': error_total
-            },
-            'details': results_list
-        })
+        return JsonResponse({'task_id': task_id})
 
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required
@@ -322,30 +315,49 @@ def scan_server(request, server_id):
 def export_server_report_csv(request, server_id):
     """Представление для экспорта данных о сканирование в CSV"""
     server = get_object_or_404(Servers, id=server_id, created_by=request.user)
-
-    if not server.last_scan_details:
-        response = HttpResponse(content_type='text/plain; charset=utf-8-sig')
-        response.write('Нет данных сканирования для этого сервера.')
-        return response
+    csv_content = generate_server_csv_content(server)
 
     response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
     response['Content-Disposition'] = f'attachment; filename="server_{server.name}_scan_report.csv"'
-
-    writer = csv.writer(response, delimiter=';')
-    writer.writerow(['Код','Описание','Проверяемый параметр','Статус','Ожидалось','Получено'])
-
-    for item in server.last_scan_details:
-        if item.get('status') == 'ERROR':
-            current_value = item.get('message','Ошибка')
-        else:
-            current_value = item.get('current', '')
-        writer.writerow([
-            item.get('code',''),
-            item.get('description', ''),
-            item.get('verifiable_value', ''),
-            item.get('status', ''),
-            item.get('expected', ''),
-        ])
+    response.write(csv_content)
     return response
+
+
+@login_required
+def export_all_reports_zip(request):
+    """Представление для скачивания архива с отчетами отсканированных серверов"""
+    servers = Servers.objects.filter(created_by=request.user, is_active=True)
+    buffer = BytesIO()
+
+    with zipfile.ZipFile(buffer, 'w') as zip_file:
+        for server in servers:
+            csv_content = generate_server_csv_content(server)
+            filename = f"server_{server.id}_{server.name}.csv"
+            zip_file.writestr(filename, csv_content)
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="all_reports.zip"'
+    return response
+
+
+@login_required
+def task_status(request, task_id):
+    try:
+        task = ScanTask.objects.get(task_id=task_id, created_by=request.user)
+        response = {
+            'status': task.status,
+            'processed': task.processed_servers,
+            'total': task.total_servers,
+            'passed_total': task.passed_total,
+            'failed_total': task.failed_total,
+            'error_total': task.error_total,
+        }
+        if task.error_message:
+            response['error_message'] = task.error_message
+        return JsonResponse(response)
+    except ScanTask.DoesNotExist:
+        return JsonResponse({'status': 'not_found'}, status=404)
+
 
 

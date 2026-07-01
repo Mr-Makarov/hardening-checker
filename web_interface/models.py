@@ -103,3 +103,30 @@ class Checks(models.Model):
         return f"{self.code} {self.category} {self.parameter_check} - {self.description[:50]}"
 
 
+
+class ScanTask(models.Model):
+    """Модель для хранения прогресса сканирования"""
+    STATUS_CHOICES = [
+        ('pending', 'Ожидание'),
+        ('running', 'Выполняется'),
+        ('completed', 'Завершено'),
+        ('failed', 'Ошибка'),
+    ]
+    task_id = models.CharField(max_length=36, unique=True, db_index=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    profile = models.ForeignKey(ScanProfiles, on_delete=models.CASCADE)
+    servers = models.ManyToManyField(Servers)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    total_servers = models.PositiveIntegerField(default=0)
+    processed_servers = models.PositiveIntegerField(default=0)
+    passed_total = models.PositiveIntegerField(default=0)
+    failed_total = models.PositiveIntegerField(default=0)
+    error_total = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    error_message = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Task #{self.id} - {self.status}"
+
+

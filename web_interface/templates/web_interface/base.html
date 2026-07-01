@@ -3,21 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Vulnerability Scanner{% endblock %}</title>
+    <title>{% block title %}Hardening Checker{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
     <h1>🛡️ Hardening Checker | Харденинг сканер</h1>
 
-    <!-- Кнопка выхода ДО блока content -->
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        {% if user.is_authenticated %}
+    <nav>
+        <ul>
+            <li><a href="{% url 'index' %}">🏠 Главная</a></li>
+            <li><a href="{% url 'servers_list' %}">🖥️ Серверы</a></li>
+            <li><a href="/admin">📋 Админка</a></li>
+        </ul>
+        <div class="user-info">
             <span>👋 Привет, <strong>{{ user.username }}</strong>!</span>
-            <form method="post" action="{% url 'logout' %}" style="display: inline;">
+            <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
                 <button type="submit">Выйти</button>
             </form>
-        {% endif %}
-    </div>
+        </div>
+    </nav>
+
 
     <hr>
 
