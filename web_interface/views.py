@@ -68,8 +68,8 @@ def index(request):
             action = request.POST.get('action')
 
             if action == 'check':
-                results_data = test_connection(host, port, username, password)
-                print(results_data)
+                success, message = test_connection(host, port, username, password)
+                results_data = {'type': 'check', 'data': message}
             elif action == 'scan':
                 try:
                     server = Servers.objects.get(host=host, port=port, username=username, created_by=request.user)

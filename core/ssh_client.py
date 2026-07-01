@@ -27,10 +27,13 @@ class SSHConnection:
 
         except paramiko.AuthenticationException:
             print("Ошибка аутентификации")
+            raise
         except paramiko.SSHException as e:
             print(f"SSH ошибка: {e}")
+            raise
         except Exception as e:
             print(f"Общая ошибка: {e}")
+            raise
 
 
     def execute(self, command: str):
