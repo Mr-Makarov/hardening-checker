@@ -79,6 +79,7 @@ class Checks(models.Model):
         ('grub', 'GRUB'),
         ('pam', 'PAM/Пароли'),
         ('services', 'Сервисы'),
+        ('pentest', 'PenTest'),
     ]
 
     # Выбор важности

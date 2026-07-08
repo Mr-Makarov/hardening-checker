@@ -1,14 +1,13 @@
 from django.utils import timezone
-
+from django.db import transaction
+from .models import ScanTask, Servers, ScanProfiles
+from .services import run_scan
 
 
 def run_scan_task(task_id, user_id, server_ids, profile_id):
     """
     Функция для выполнения сканирования в фоновом потоке
     """
-    from django.db import transaction
-    from .models import ScanTask, Servers, ScanProfiles
-    from .services import run_scan
 
     try:
         # Получаем задачу из БД
@@ -28,15 +27,14 @@ def run_scan_task(task_id, user_id, server_ids, profile_id):
 
         for server in servers:
             try:
-                checks = profile.checks.all()
-                scan_result = run_scan(server.host, server.port, server.username, server.password, checks)
+                scan_result = run_scan(server.host, server.port, server.username, server.password, profile)
                 stats = scan_result.get('stats', {"PASS": 0, "FAIL": 0, "ERROR": 0})
 
                 passed_total += stats.get('PASS', 0)
                 failed_total += stats.get('FAIL', 0)
                 error_total += stats.get('ERROR', 0)
 
-                # Сохраняем результат в сервер
+                # Сохраняем результат в DB
                 server.last_scan_date = timezone.now()
                 if stats.get('FAIL', 0) > 0:
                     server.last_scan_status = 'failed'
@@ -55,7 +53,7 @@ def run_scan_task(task_id, user_id, server_ids, profile_id):
 
             except Exception as e:
                 error_total += 1
-                # Сохраняем ошибку в сервер
+                # Сохраняем ошибку в DB
                 server.last_scan_date = timezone.now()
                 server.last_scan_status = 'error'
                 server.last_scan_summary = {'PASS': 0, 'FAIL': 0, 'ERROR': 1}

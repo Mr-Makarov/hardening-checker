@@ -16,7 +16,7 @@ from applications import test_connection, generate_server_csv_content
 from .tasks import run_scan_task
 
 
-# Create your views here.
+
 @login_required
 def index(request):
     results_data = None
@@ -64,8 +64,9 @@ def index(request):
             password = form.cleaned_data['password']
             check_id = form.cleaned_data['check']
             profile = ScanProfiles.objects.get(id=check_id)
-            checks = profile.checks.all()
+            #checks = profile.checks.all()
             action = request.POST.get('action')
+            #print(checks)
 
             if action == 'check':
                 success, message = test_connection(host, port, username, password)
@@ -75,9 +76,9 @@ def index(request):
                     server = Servers.objects.get(host=host, port=port, username=username, created_by=request.user)
                 except Servers.DoesNotExist:
                     server = None
-                scan_result = run_scan(host, port, username, password, checks)
+                scan_result = run_scan(host, port, username, password, profile)
                 if server:
-                    # Сохраняем результат в сервер
+                    # Сохраняем результат в DB
                     stats = scan_result.get('stats', {})
                     server.last_scan_date = timezone.now()
                     if stats.get('FAIL', 0) > 0:
@@ -296,9 +297,8 @@ def mass_scan_thread(request):
 
 @login_required
 def scan_server(request, server_id):
+    """Представление для сканирования серверов"""
     server = get_object_or_404(Servers, id=server_id, created_by=request.user)
-    # Получаем профиль (например, последний использованный или базовый)
-    # Можно передавать profile_id через GET, но пока возьмём первый активный
     profile = ScanProfiles.objects.filter(is_base_profile=True).first()
     if not profile:
         profile = ScanProfiles.objects.first()
@@ -343,6 +343,7 @@ def export_all_reports_zip(request):
 
 @login_required
 def task_status(request, task_id):
+    """Представление для полученгия статуса задачи"""
     try:
         task = ScanTask.objects.get(task_id=task_id, created_by=request.user)
         response = {
